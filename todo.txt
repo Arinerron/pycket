@@ -1,0 +1,23 @@
+todo:
+figure out what is going on with parsing
+
+pycket [master●] % python llmnr.py
+^CTraceback (most recent call last):
+  File "llmnr.py", line 36, in <module>
+    print(parse(packet))
+  File "llmnr.py", line 30, in parse
+    'dns.qry.class' : {'size' : 2}
+  File "/Backup/github/pycket/pycket.py", line 129, in parse_packet
+    output = self.parse_multi_size(offset = offset, size_size = size, char = char, include = include)
+  File "/Backup/github/pycket/pycket.py", line 94, in parse_multi_size
+    segment = self.parse_size(offset = offset, size_size = size_size, include = False)
+  File "/Backup/github/pycket/pycket.py", line 81, in parse_size
+    size = u(self.parse(offset, size_size))
+  File "/Backup/github/pycket/smartbytes.py", line 40, in <lambda>
+    u = lambda data, endian = 'big', signed = False : int.from_bytes(bytes(to_bytes(data)), byteorder = endian, signed = signed)
+KeyboardInterrupt
+
+try to make some smartbytes() objects from the python console and see if it hangs like that
+
+
+also try printing stuff out in the __init__ for smartbytes()
