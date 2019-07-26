@@ -3,18 +3,19 @@
 # smartbytes: makes parsing bytes ez
 # 
 # Author: Aaron Esau <python@aaronesau.com>
-# License: GPL
- 
+# License: MIT (see LICENSE.md)
+
+
 import binascii, struct, itertools
+
+__all__ = ['smartbytes', 'smartbytesiter', 'to_bytes', 'u', 'u8', 'u16', 'u32', 'u64', 'p', 'p8', 'p16', 'p32', 'p64', 'e', 'E']
 
 # debug functions
 
-
-hexify = binascii.hexlify
-unhexify = binascii.unhexlify
+hexify = lambda x, endian = 'big', encoding = 'utf-8' : binascii.hexlify(to_bytes(x, endian = endian, encoding = encoding))
+unhexify = lambda x, endian = 'big', encoding = 'utf-8' : binascii.unhexlify(to_bytes(x, endian = endian, encoding = encoding))
 
 hexdump = lambda value, columns = 8 : b'\n'.join([b' '.join([b' ' * 2 if a is None else hexify(bytes([a])).rjust(2, b'0') for a in x]) for x in map(lambda *c : tuple(c), *(itertools.chain(iter(to_bytes(value)), [None] * (columns - 1)),) * columns)]).decode() # sorry about this, it was just a challenge for myself
-
 
 # parsing functions
 
@@ -30,8 +31,10 @@ def to_bytes(value, endian = 'big', encoding = 'utf-8'):
         return value.encode(encoding)
     elif isinstance(value, int):
         return p(value, endian = endian, signed = False)
-    elif isinstance(value, list) or isinstance(value, set):
+    elif '__iter__' in dir(value):
         return b''.join([to_bytes(x) for x in value])
+
+    print(type(value))
 
     raise TypeError
 
@@ -177,6 +180,9 @@ class smartbytes:
     def __bytes__(self):
         return self.get_contents()
 
+    def __human__(self):
+        return str(bytes(self))[1:]
+
     def __repr__(self):
         return self.get_contents().__repr__()
 
@@ -188,6 +194,9 @@ class smartbytes:
 
     def hex(self):
         return hexify(self.get_contents())
+
+    def human(self):
+        return self.__human__()
 
     def join(self, values):
         build = smartbytes()
