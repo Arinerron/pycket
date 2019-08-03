@@ -1,0 +1,90 @@
+name: http
+version: 2
+description: Hypertext Markup Language
+author: Aaron Esau <python@aaronesau.com>
+license: MIT
+
+parser:
+  - name: HTTPHeader
+    description: HTTP Header
+    mapping:
+      - name: name
+        description: HTTP Header Name
+        parse:
+          name: parse_until
+          count: 1
+          include: false
+          char: ':'
+      
+      - name: value
+        description: HTTP Header Value
+        parse:
+          size: null
+          include: false
+          post:
+            - 'lambda x : x.lstrip()'
+  
+
+  - name: HTTPHeaders
+    description: HTTP Headers
+    mapping:
+      - name: header
+        description: HTTP Headers
+        parent: true # makes it so the "name" has no effect and parsing returns this key
+        parse:
+          foreach: HTTPHeader
+          name: parse_until_split:
+          char:
+            - '\n'
+            - '\n\n'
+          include: false
+  
+
+  - name: HTTPParameters
+    description: HTTP Parameters
+    mapping:
+      - name: parameters
+        description: HTTP Parameters
+        parent: true
+        parse:
+          size: null
+          post:
+            - 'urllib.parse.parse_qs'
+  
+
+  - name: HTTPPath
+    description: HTTP Path
+    mapping:
+      - name: uri
+        description: HTTP Path URI
+        parse:
+          name: parse_until
+          char: '?'
+          count: 1
+          include: false
+      
+      - name: parameters
+        description: HTTP Path Parameters
+        parse:
+          size: null
+          type: HTTPParameters
+  
+
+  - name: HTTPRequest
+    description: HTTP Request
+    mapping:
+      - name: request.line
+        description: HTTP Request Line
+        parse:
+          name: parse_until
+          count: 1
+          include: false
+          type: HTTPRequestLine
+      
+      - name: request.headers
+        description: HTTP Request Headers
+        parse:
+          name: parse_until
+          char: '\n\n'
+          include: false
+          type: HTTPHeaders

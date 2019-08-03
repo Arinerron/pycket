@@ -54,7 +54,7 @@ class PacketSegment(smartbytes):
             else:
                 build += '%s* ' % (' ' * indent)
 
-            if isinstance(value, dict) or isinstance(value, OrderedDict) or isinstance(value, PacketSegment):
+            if isinstance(value, dict) or isinstance(value, OrderedDict) or (isinstance(value, PacketSegment) and not value is self):
                 build += '\n' + self.__str__(data = data, indent = indent + size, size = size)
                 continue
             if isinstance(value, smartbytes):
@@ -87,7 +87,7 @@ class PacketSegment(smartbytes):
     returns the bytes from `offset` to `size`
     '''
     def _parse(self, offset = 0, size = None):
-        return self.get_contents()[offset : (None if size is None else offset + size)]
+        return smartbytes(self.get_contents()[offset : (None if size is None else offset + size)])
 
     '''
     parses bytes until `count` `char` characters are found, starting at `offset`
@@ -108,6 +108,20 @@ class PacketSegment(smartbytes):
             build += byte
 
         return build
+
+    '''
+    parses bytes until `char[0]` is found, splitting on `char[1]` or "\n"
+    '''
+    def _parse_until_split(self, offset = 0, char = ['\n', '\n\n'], include = True):
+        output = list()
+
+        for byteslist in self._parse(offset).partition(char[1])[0].split(char[0]):
+            if include:
+                byteslist += char[0]
+
+            output.append(byteslist)
+    
+        return output
 
     '''
     parses the first n bytes defined by a header of `size_size` bytes, starting at `offset` (or `offset` + `size_size` if `include`)
@@ -235,12 +249,23 @@ class PacketSegment(smartbytes):
                         offset += len(char)
 
                     offset += len(output)
+                elif parse == 'parse_until_split':
+                    output = self._parse_until_split(offset = offset, char = char, include = include)
+
+                    if not include:
+                        offset += len(char[1])
+
+                    offset += len(smartbytes(char[0]).join(output))
                 else:
                     output = self._parse(offset = offset, size = size)
 
                     offset += len(output)
 
-                output = self._parse_dtype(output, dtype, deep = deep)
+                if not isinstance(output, list): # could cause issues TODO investigate
+                    output = [output]
+                
+                for seg in output:
+                    output = self._parse_dtype(seg, dtype, deep = deep)
 
                 if not post is None:
                     if not isinstance(post, list):
